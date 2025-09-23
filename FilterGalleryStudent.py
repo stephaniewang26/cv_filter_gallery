@@ -11,6 +11,15 @@ import numpy as np
 import tkinter as tk
 from tkinter import Tk
 from tkinter import filedialog
+
+#paint vars
+drawing = False
+last_x = -1
+last_y = -1
+draw_color = (255, 255, 255)
+brush_size = 2
+draw_mask = None
+
 # ----------------------------
 # Filter Functions (TODOs)
 # ----------------------------
@@ -84,6 +93,20 @@ def create_gallery(og, f1, f2, f3, f4):
     gallery = np.vstack((row1, row2))
     return gallery
 
+def draw_mouse_callback(event, x, y, flags, param):
+    global drawing, last_x, last_y, draw_color, brush_size, draw_mask
+    
+    if event == cv2.EVENT_LBUTTONDOWN:
+        drawing = True
+        last_x, last_y = x, y
+    elif event == cv2.EVENT_MOUSEMOVE and drawing:
+        if draw_mask is None:
+            draw_mask = np.zeros_like(gallery)
+        cv2.line(draw_mask, (last_x, last_y), (x, y), draw_color, brush_size)
+        last_x, last_y = x, y
+    elif event == cv2.EVENT_LBUTTONUP:
+        drawing = False
+
 
 # ----------------------------
 # Main Program
@@ -128,6 +151,13 @@ if __name__ == "__main__":
             cv2.createTrackbar("Alpha", "Filter Gallery", 80, 100, nothing)
             cv2.createTrackbar("Gamma", "Filter Gallery", 10, 100, nothing)
 
+            #paint trackbars
+            cv2.setMouseCallback("Filter Gallery", draw_mouse_callback)
+            cv2.createTrackbar("Brush R", "Filter Gallery", 255, 255, nothing)
+            cv2.createTrackbar("Brush G", "Filter Gallery", 255, 255, nothing)
+            cv2.createTrackbar("Brush B", "Filter Gallery", 255, 255, nothing)
+            cv2.createTrackbar("Brush Size", "Filter Gallery", 2, 20, nothing)
+
             while True:
                 #read trackbar values
                 red_add = cv2.getTrackbarPos("Red Add", "Filter Gallery")
@@ -161,11 +191,24 @@ if __name__ == "__main__":
                 f4 = filter4(img.copy(), alpha, gamma)
 
                 gallery = create_gallery(img.copy(), f1, f2, f3, f4)
-                cv2.imshow('Filter Gallery', gallery)
+                
+                r = cv2.getTrackbarPos("Brush R", "Filter Gallery")
+                g = cv2.getTrackbarPos("Brush G", "Filter Gallery")
+                b = cv2.getTrackbarPos("Brush B", "Filter Gallery")
+                draw_color = (b, g, r)
+                brush_size = cv2.getTrackbarPos("Brush Size", "Filter Gallery")
+                
+                display = gallery.copy()
+                if draw_mask is not None:
+                    display = cv2.addWeighted(display, 1, draw_mask, 1, 0)
+                
+                cv2.imshow("Filter Gallery", display)
 
-                key = cv2.waitKey(50) & 0xFF
-                if key != 255:   
+                key = cv2.waitKey(1) & 0xFF
+                if key == ord('q'):
                     break
+                elif key == ord('c'):  # Clear drawing
+                    draw_mask = None
 
             cv2.destroyAllWindows()
             
