@@ -8,8 +8,9 @@ matplotlib>=3.7.0
 
 import cv2
 import numpy as np
+import tkinter as tk
 from tkinter import Tk
-
+from tkinter import filedialog
 # ----------------------------
 # Filter Functions (TODOs)
 # ----------------------------
@@ -55,7 +56,9 @@ def filter4(img, alpha, gamma):
 
     rdj_overlay = cv2.imread('rdj_overlay.jpg')
     rdj_overlay = cv2.resize(rdj_overlay, (rdj_img.shape[1], rdj_img.shape[0]))
+    #weight of first image
     alpha_val = alpha / 100
+    #weight of second image
     beta_val = 1 - alpha_val
     rdj_img = cv2.addWeighted(rdj_img, alpha_val, rdj_overlay, beta_val, gamma)
     return rdj_img
@@ -69,16 +72,6 @@ def create_gallery(filter1, filter2, filter3, filter4):
 """
     pass
 
-if __name__ == "__main__":
-    opossum_img = cv2.imread('opossum.png')
-    #🆘🆘🆘🆘🆘are these of sufficient complexity?
-    cv2.imshow('Original', opossum_img)
-    # cv2.imshow('Filter 1', filter1(opossum_img, 0, 100))
-    #cv2.imshow('Filter 2', filter2(opossum_img, 3, 3))
-    #cv2.imshow('Filter 3', filter3(opossum_img, smoothing_strength=150, block_size=21))
-    cv2.imshow('Filter 4', filter4(opossum_img, alpha=80, gamma=10))
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
 
 # ----------------------------
 # Main Program
@@ -92,9 +85,35 @@ if __name__ == "__main__":
 # Add two+ trackbars for each filter using cv2.createTrackbar
 # Display Keyboard Shortcuts if using any
 
-#while True:
-    # Read current trackbar values
-    # Apply filters
-    # Show gallery
-    # Check for save/quit
-   # pass
+if __name__ == "__main__":
+    #opossum_img = cv2.imread('opossum.png')
+    Tk().withdraw() # keep root window from appearing
+
+    fileTypes = [("Image files", "*.png;*.jpg;*.jpeg")]
+    file_path = tk.filedialog.askopenfilename(filetypes=fileTypes)
+
+    if len(file_path):
+        img=cv2.imread(file_path)
+
+        if img is None:
+            print("Error: Could not read image.")
+        else:
+            filtered_img = filter1(img, red_add=0, blue_subtract=100)
+
+            # Show original and filtered image
+            cv2.imshow("Original", img)
+            cv2.imshow("Filter 1", filtered_img)
+            cv2.waitKey(0)
+            cv2.destroyAllWindows()
+    else:
+        print("No file chosen!")
+
+
+    #🆘🆘🆘🆘🆘are these of sufficient complexity?
+    #cv2.imshow('Original', opossum_img)
+    # cv2.imshow('Filter 1', filter1(opossum_img, 0, 100))
+    #cv2.imshow('Filter 2', filter2(opossum_img, 3, 3))
+    #cv2.imshow('Filter 3', filter3(opossum_img, smoothing_strength=150, block_size=21))
+    #cv2.imshow('Filter 4', filter4(opossum_img, alpha=80, gamma=10))
+    # cv2.waitKey(0)
+    # cv2.destroyAllWindows()
