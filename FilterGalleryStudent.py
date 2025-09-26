@@ -66,11 +66,35 @@ def filter4(img, alpha, gamma):
 
     rdj_overlay = cv2.imread('rdj_overlay.jpg')
     rdj_overlay = cv2.resize(rdj_overlay, (rdj_img.shape[1], rdj_img.shape[0]))
-    #weight of first image
+
+    rdj_text = cv2.imread('rdj_text.png', cv2.IMREAD_UNCHANGED)
+    
+    # width of rdj text as 40% of image width
+    target_width = int(rdj_img.shape[1] * 0.4)
+    # scale factor 
+    scale = target_width / rdj_text.shape[1]
+    #new height w/ aspect ratio
+    target_height = int(rdj_text.shape[0] * scale)
+    rdj_text = cv2.resize(rdj_text, (target_width, target_height))
+    
+    #blend base images
     alpha_val = alpha / 100
-    #weight of second image
     beta_val = 1 - alpha_val
-    rdj_img = cv2.addWeighted(rdj_img, alpha_val, rdj_overlay, beta_val, gamma)
+    rdj_img = cv2.addWeighted(rdj_overlay, alpha_val, rdj_img, beta_val, gamma)
+    
+    #center text
+    x_offset = (rdj_img.shape[1] - rdj_text.shape[1]) // 2
+    y_offset = (rdj_img.shape[0] - rdj_text.shape[0]) // 2
+    
+    y1, y2 = y_offset, y_offset + rdj_text.shape[0]
+    x1, x2 = x_offset, x_offset + rdj_text.shape[1]
+    
+    #blend text w alpha channel
+    alpha_text = rdj_text[:, :, 3] / 255.0
+    for c in range(3):
+        rdj_img[y1:y2, x1:x2, c] = rdj_img[y1:y2, x1:x2, c] * (1 - alpha_text) + \
+                                   rdj_text[:, :, c] * alpha_text
+    
     return rdj_img
     #Return the resulting filtered image 
 
@@ -148,8 +172,8 @@ if __name__ == "__main__":
             cv2.createTrackbar("Outline thickness", "Filter Gallery", 21, 101, nothing)
             #🆘🆘idk what to put as the max i think it can just keep going
 
-            cv2.createTrackbar("Alpha", "Filter Gallery", 80, 100, nothing)
-            cv2.createTrackbar("Gamma", "Filter Gallery", 10, 100, nothing)
+            cv2.createTrackbar("Rio Strength", "Filter Gallery", 30, 100, nothing)
+            cv2.createTrackbar("Brightness", "Filter Gallery", 10, 100, nothing)
 
             #paint trackbars
             cv2.setMouseCallback("Filter Gallery", draw_mouse_callback)
@@ -182,8 +206,8 @@ if __name__ == "__main__":
                     block_size = max(3, block_size-1)  # must be odd
                     cv2.setTrackbarPos('Outline thickness', 'Filter Gallery', block_size)
                 
-                alpha = cv2.getTrackbarPos("Alpha", "Filter Gallery")
-                gamma = cv2.getTrackbarPos("Gamma", "Filter Gallery")
+                alpha = cv2.getTrackbarPos("Rio Strength", "Filter Gallery")
+                gamma = cv2.getTrackbarPos("Brightness", "Filter Gallery")
 
                 f1 = filter1(img.copy(), red_add, blue_sub)
                 f2 = filter2(img.copy(), x_k, y_k)
@@ -207,7 +231,7 @@ if __name__ == "__main__":
                 key = cv2.waitKey(1) & 0xFF
                 if key == ord('q'):
                     break
-                elif key == ord('c'):  # Clear drawing
+                elif key == ord('c'):  #clear drawing
                     draw_mask = None
 
             cv2.destroyAllWindows()
@@ -216,7 +240,6 @@ if __name__ == "__main__":
         print("No file chosen!")
 
 
-    #🆘🆘🆘🆘are these of sufficient complexity?
     #cv2.imshow('Original', opossum_img)
     # cv2.imshow('Filter 1', filter1(opossum_img, 0, 100))
     #cv2.imshow('Filter 2', filter2(opossum_img, 3, 3))
